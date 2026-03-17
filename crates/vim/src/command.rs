@@ -3,7 +3,7 @@ use collections::{HashMap, HashSet};
 use command_palette_hooks::{CommandInterceptItem, CommandInterceptResult};
 use editor::{
     Bias, Editor, EditorSettings, SelectionEffects, ToPoint,
-    actions::{SortLinesCaseInsensitive, SortLinesCaseSensitive},
+    actions::{Rewrap, SortLinesCaseInsensitive, SortLinesCaseSensitive},
     display_map::ToDisplayPoint,
 };
 use futures::AsyncWriteExt as _;
