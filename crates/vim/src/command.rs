@@ -3587,5 +3587,25 @@ mod test {
             "},
             Mode::Normal,
         );
+
+        cx.set_state(
+            indoc! {"
+                «0123456789 0123456789ˇ»
+                0123456789 0123456789
+            "},
+            Mode::VisualLine,
+        );
+
+        cx.simulate_keystrokes(": reflow");
+        cx.simulate_keystrokes("enter");
+
+        cx.assert_state(
+            indoc! {"
+                ˇ0123456789
+                0123456789
+                0123456789 0123456789
+            "},
+            Mode::Normal,
+        );
     }
 }
