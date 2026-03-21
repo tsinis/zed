@@ -27,6 +27,7 @@ use rand::Rng as _;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+use std::str::FromStr;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use url::Url;
@@ -1069,9 +1070,9 @@ const PREFERRED_CALLBACK_PORT: u16 = 27523;
 /// contains `code` and `state` query parameters, responds with a minimal
 /// HTML page telling the user they can close the tab, and shuts down.
 ///
-/// The callback server shuts down when the returned oneshot receiver is
-/// dropped (e.g. because the authentication task was cancelled), or after a
-/// 5-minute timeout.
+/// The callback server shuts down when the returned oneshot receiver is dropped
+/// (e.g. because the authentication task was cancelled), or after a timeout
+/// ([CALLBACK_TIMEOUT]).
 pub async fn start_callback_server() -> Result<(
     String,
     futures::channel::oneshot::Receiver<Result<OAuthCallback>>,
@@ -1143,7 +1144,12 @@ pub async fn start_callback_server() -> Result<(
             let response = tiny_http::Response::from_string(body)
                 .with_status_code(status_code)
                 .with_header(
-                    tiny_http::Header::from_bytes(&b"Content-Type"[..], &b"text/html"[..]).unwrap(),
+                    tiny_http::Header::from_str("Content-Type: text/html")
+                        .expect("failed to construct response header"),
+                )
+                .with_header(
+                    tiny_http::Header::from_str("Keep-Alive: timeout=0,max=0")
+                        .expect("failed to construct response header"),
                 );
             request.respond(response).log_err();
 
