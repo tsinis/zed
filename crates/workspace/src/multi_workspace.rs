@@ -127,6 +127,12 @@ pub struct MultiWorkspace {
     _subscriptions: Vec<Subscription>,
 }
 
+impl Drop for MultiWorkspace {
+    fn drop(&mut self) {
+        println!("MultiWorkspace dropped");
+    }
+}
+
 impl EventEmitter<MultiWorkspaceEvent> for MultiWorkspace {}
 
 impl MultiWorkspace {

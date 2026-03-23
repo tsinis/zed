@@ -298,7 +298,7 @@ fn bind_on_window_closed(cx: &mut App) -> Option<gpui::Subscription> {
             .on_last_window_closed
             .is_quit_app()
             .then(|| {
-                cx.on_window_closed(|cx| {
+                cx.on_window_closed(|cx, _window_id| {
                     if cx.windows().is_empty() {
                         cx.quit();
                     }
@@ -374,10 +374,31 @@ pub fn initialize_workspace(
     })
     .detach();
 
-    cx.observe_new(|_multi_workspace: &mut MultiWorkspace, window, cx| {
+    cx.observe_new(|multi_workspace: &mut MultiWorkspace, window, cx| {
         let Some(window) = window else {
             return;
         };
+
+        #[cfg(track_project_leak)]
+        {
+            let multi_workspace_handle = multi_workspace.workspace().read(cx).project().downgrade();
+            let window_id1 = window.window_handle().window_id();
+            cx.on_window_closed(move |cx, window_id| {
+                let multi_workspace_handle = multi_workspace_handle.clone();
+                if window_id != window_id1 {
+                    return;
+                }
+                cx.spawn(async move |cx| {
+                    cx.background_executor()
+                        .timer(Duration::from_millis(501))
+                        .await;
+
+                    multi_workspace_handle.assert_released();
+                })
+                .detach();
+            })
+            .detach();
+        }
 
         let multi_workspace_handle = cx.entity().downgrade();
         window.on_window_should_close(cx, move |window, cx| {

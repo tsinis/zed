@@ -974,6 +974,16 @@ pub struct Window {
     inspector: Option<Entity<Inspector>>,
 }
 
+impl Drop for Window {
+    fn drop(&mut self) {
+        println!("droppping root");
+        let weak = self.root.as_ref().unwrap().downgrade();
+        self.root = None;
+        println!("Window dropped");
+        println!("upgrade: {:?}", weak.upgrade().is_some());
+    }
+}
+
 #[derive(Clone, Debug, Default)]
 struct ModifierState {
     modifiers: Modifiers,

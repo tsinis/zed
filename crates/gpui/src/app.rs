@@ -240,7 +240,7 @@ type Listener = Box<dyn FnMut(&dyn Any, &mut App) -> bool + 'static>;
 pub(crate) type KeystrokeObserver =
     Box<dyn FnMut(&KeystrokeEvent, &mut Window, &mut App) -> bool + 'static>;
 type QuitHandler = Box<dyn FnOnce(&mut App) -> LocalBoxFuture<'static, ()> + 'static>;
-type WindowClosedHandler = Box<dyn FnMut(&mut App)>;
+type WindowClosedHandler = Box<dyn FnMut(&mut App, WindowId)>;
 type ReleaseListener = Box<dyn FnOnce(&mut dyn Any, &mut App) + 'static>;
 type NewEntityListener = Box<dyn FnMut(AnyEntity, &mut Option<&mut Window>, &mut App) + 'static>;
 
@@ -1561,7 +1561,7 @@ impl App {
                     cx.windows.remove(id);
 
                     cx.window_closed_observers.clone().retain(&(), |callback| {
-                        callback(cx);
+                        callback(cx, id);
                         true
                     });
 
@@ -2035,7 +2035,10 @@ impl App {
 
     /// Register a callback to be invoked when a window is closed
     /// The window is no longer accessible at the point this callback is invoked.
-    pub fn on_window_closed(&self, mut on_closed: impl FnMut(&mut App) + 'static) -> Subscription {
+    pub fn on_window_closed(
+        &self,
+        mut on_closed: impl FnMut(&mut App, WindowId) + 'static,
+    ) -> Subscription {
         let (subscription, activate) = self.window_closed_observers.insert((), Box::new(on_closed));
         activate();
         subscription
@@ -2351,13 +2354,12 @@ impl AppContext for App {
             let entity = build_entity(&mut Context::new_context(cx, slot.downgrade()));
 
             cx.push_effect(Effect::EntityCreated {
-                entity: handle.clone().into_any(),
+                entity: handle.into_any(),
                 tid: TypeId::of::<T>(),
                 window: cx.window_update_stack.last().cloned(),
             });
 
-            cx.entities.insert(slot, entity);
-            handle
+            cx.entities.insert(slot, entity)
         })
     }
 
